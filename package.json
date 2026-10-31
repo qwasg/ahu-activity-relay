@@ -1,0 +1,62 @@
+{
+  "name": "ahu-activity-relay",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "tsx --env-file-if-exists=.env apps/api/src/server.ts",
+    "worker": "tsx --env-file-if-exists=.env apps/worker/src/main.ts",
+    "web": "npm run dev -w @relay/web",
+    "build": "npm run db:generate && tsc --noEmit && npm run build -w @relay/web",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "prisma generate --schema packages/db/prisma/schema.prisma",
+    "db:migrate": "prisma migrate deploy --schema packages/db/prisma/schema.prisma",
+    "db:seed": "tsx --env-file-if-exists=.env packages/db/prisma/seed.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.0.0",
+    "@fastify/helmet": "^13.0.0",
+    "@fastify/multipart": "^9.0.0",
+    "@fastify/rate-limit": "^10.0.0",
+    "@fastify/swagger": "^9.0.0",
+    "@napi-rs/canvas": "^0.1.80",
+    "@prisma/client": "^6.19.0",
+    "argon2": "^0.44.0",
+    "csv-parse": "^7.0.3",
+    "dotenv": "^17.0.0",
+    "exceljs": "^4.4.0",
+    "fastify": "^5.6.0",
+    "file-type": "^21.0.0",
+    "imapflow": "^1.0.0",
+    "mailparser": "^3.7.0",
+    "mammoth": "^1.10.0",
+    "nodemailer": "^10.3.1",
+    "openai": "^6.0.0",
+    "pdfjs-dist": "^6.4.299",
+    "pg-boss": "^10.3.0",
+    "sharp": "^0.35.5",
+    "yauzl": "^3.2.0",
+    "zod": "^4.1.0"
+  },
+  "overrides": {
+    "@prisma/config": {
+      "deepmerge-ts": "^8.0.2"
+    }
+  },
+  "devDependencies": {
+    "@types/mailparser": "^3.4.0",
+    "@types/node": "^24.0.0",
+    "@types/nodemailer": "^7.0.0",
+    "@types/yauzl": "^2.10.0",
+    "prisma": "^6.19.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}

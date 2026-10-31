@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+model Activity {
+  id              String @id @default(cuid())
+  slug            String @unique
+  title           String
+  description     String
+  registrationStart DateTime
+  registrationEnd DateTime
+  startsAt        DateTime
+  endsAt          DateTime
+  groups          String[]
+  revision        Int @default(0)
+  rules           RuleVersion[]
+  roster          RosterEntry[]
+  submissions     Submission[]
+  snapshots       ResultSnapshot[]
+  tieDecisions    Json @default("[]")
+}
+model RuleVersion {
+  id          String @id @default(cuid())
+  activityId  String
+  activity    Activity @relation(fields: [activityId], references: [id])
+  version     Int
+  config      Json
+  createdAt   DateTime @default(now())
+  @@unique([activityId, version])
+}
+model RosterEntry {
+  id          String @id @default(cuid())
+  activityId  String
+  activity    Activity @relation(fields: [activityId], references: [id])
+  studentId   String
+  name        String
+  department  String
+  major       String
+  className   String
+  eligible    Boolean
+  staff       Boolean
+  confirmed   Boolean @default(true)
+  @@unique([activityId, studentId])
+}
+model Submission {
+  id          String @id @default(cuid())
+  activityId  String
+  activity    Activity @relation(fields: [activityId], references: [id])
+  studentId   String
+  name        String
+  department  String
+  major       String
+  className   String
+  email       String
+  text        String
+  link        String
+  source      String
+  receivedAt  DateTime @default(now())
+  late        Boolean @default(false)
+  consent     Boolean
+  status      String @default("queued")
+  archiveStatus String @default("pending")
+  archiveWaiver String?
+  contentHash String
+  idempotencyKey String @unique
+  receiptToken String @unique
+  version     Int @default(0)
+  attachments Attachment[]
+  aiReview    AIReview?
+  review      HumanReview?
+  @@index([activityId, studentId])
+  @@index([status, receivedAt])
+}
+model Attachment {
+  id          String @id @default(cuid())
+  submissionId String
+  submission  Submission @relation(fields: [submissionId], references: [id])
+  name        String
+  key         String @unique
+  mime        String
+  size        Int
+  hash        String
+  extraction  Json?
+}
+model AIReview {
+  id          String @id @default(cuid())
+  submissionId String @unique
+  submission  Submission @relation(fields: [submissionId], references: [id])
+  fingerprint String
+  model       String
+  ruleVersion Int
+  result      Json
+  usage       Json
+  createdAt   DateTime @default(now())
+}
+model AICache {
+  fingerprint String @id
+  result      Json
+  usage       Json
+  createdAt   DateTime @default(now())
+}
+model HumanReview {
+  id          String @id @default(cuid())
+  submissionId String @unique
+  submission  Submission @relation(fields: [submissionId], references: [id])
+  ruleVersion Int
+  scores      Json
+  eligible    Boolean
+  excluded    Boolean
+  identityConfirmed Boolean
+  lateApproved Boolean
+  note        String
+  adminId     String
+  updatedAt   DateTime @updatedAt
+}
+model ResultSnapshot {
+  id          String @id @default(cuid())
+  activityId  String
+  activity    Activity @relation(fields: [activityId], references: [id])
+  version     Int
+  fingerprint String
+  idempotencyKey String @unique
+  data        Json
+  createdAt   DateTime @default(now())
+  @@unique([activityId, version])
+}
+model InboundMail {
+  id          String @id @default(cuid())
+  mailbox     String
+  uidValidity String
+  uid         Int
+  messageId   String?
+  hash        String?
+  receivedAt  DateTime
+  status      String
+  error       String?
+  submissionId String?
+  rawKey      String?
+  @@unique([mailbox, uidValidity, uid])
+  @@index([messageId, hash])
+}
+model MailCursor {
+  mailbox     String @id
+  uidValidity String
+  uid         Int
+  since       DateTime
+}
+model OutboundMail {
+  id          String @id @default(cuid())
+  eventKey    String @unique
+  kind        String
+  targetId    String
+  recipient   String
+  messageId   String @unique
+  status      String @default("pending")
+  attempts    Int @default(0)
+  error       String?
+  nextAt      DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+model OutboxEvent {
+  id          String @id @default(cuid())
+  key         String @unique
+  kind        String
+  targetId    String
+  status      String @default("pending")
+  error       String?
+  attempts    Int @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+model Admin {
+  id          String @id @default(cuid())
+  username    String @unique
+  passwordHash String
+  sessions    AdminSession[]
+}
+model AdminSession {
+  tokenHash   String @id
+  adminId     String
+  admin       Admin @relation(fields: [adminId], references: [id])
+  expiresAt   DateTime
+}
+model AuditLog {
+  id          String @id @default(cuid())
+  adminId     String?
+  action      String
+  targetId    String
+  details     Json
+  createdAt   DateTime @default(now())
+}
+model ServiceState {
+  key         String @id
+  value       Json
+  updatedAt   DateTime @updatedAt
+}
